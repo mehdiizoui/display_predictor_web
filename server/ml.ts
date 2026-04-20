@@ -1,23 +1,50 @@
 /**
  * ML Model Handler for Display Prediction
- * Implements a rule-based prediction system as fallback
- * Real model integration can be added later
+ * Implements a rule-based prediction system with lazy initialization
  */
 
 let modelLoaded = false;
+let initPromise: Promise<void> | null = null;
 
 /**
- * Initialize the ML model
+ * Initialize the ML model (idempotent and lazy)
  */
 export async function initializeModel(): Promise<void> {
-  try {
-    // In production, this would load the actual pickle model
-    // For now, we use a rule-based system
-    modelLoaded = true;
-    console.log("[ML] Prediction system initialized (rule-based fallback)");
-  } catch (error) {
-    console.error("[ML] Failed to initialize model:", error);
-    throw error;
+  // If already initialized, return immediately
+  if (modelLoaded) {
+    return;
+  }
+
+  // If initialization is in progress, wait for it
+  if (initPromise) {
+    return initPromise;
+  }
+
+  // Start initialization
+  initPromise = (async () => {
+    try {
+      // In production, this would load the actual pickle model
+      // For now, we use a rule-based system
+      console.log("[ML] Initializing prediction system...");
+      modelLoaded = true;
+      console.log("[ML] Prediction system initialized (rule-based fallback)");
+    } catch (error) {
+      console.error("[ML] Failed to initialize model:", error);
+      modelLoaded = false;
+      initPromise = null;
+      throw error;
+    }
+  })();
+
+  return initPromise;
+}
+
+/**
+ * Ensure model is loaded before prediction
+ */
+async function ensureModelLoaded(): Promise<void> {
+  if (!modelLoaded) {
+    await initializeModel();
   }
 }
 
@@ -35,9 +62,8 @@ export async function predictDisplay(input: {
   ENSEIGNE: string;
   Feature: string;
 }): Promise<{ prediction: string; confidence: number }> {
-  if (!modelLoaded) {
-    throw new Error("Model not initialized");
-  }
+  // Ensure model is loaded before making prediction
+  await ensureModelLoaded();
 
   try {
     // Rule-based prediction logic
@@ -66,6 +92,8 @@ export async function predictDisplay(input: {
     const margin = Math.abs(totalScore - threshold);
     const baseConfidence = shouldDisplay ? 0.6 + margin * 0.08 : 0.4 + margin * 0.08;
     const confidence = Math.min(0.95, Math.max(0.55, baseConfidence));
+
+    console.log(`[ML] Prediction: ${shouldDisplay ? "Display" : "No_Display"} (confidence: ${confidence})`);
 
     return {
       prediction: shouldDisplay ? "Display" : "No_Display",
