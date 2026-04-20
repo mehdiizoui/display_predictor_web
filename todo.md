@@ -44,3 +44,10 @@
 - [x] Configured Inter font (900 weight) for bold typography
 - [x] Made responsive layout for mobile and desktop
 - [x] Added navigation between Home and Predict pages
+
+
+## Bug Fixes
+
+- [x] Fix ML model initialization error (SRE module mismatch)
+- [x] Test prediction endpoint with valid input
+- [x] Ensure model loads correctly on server startup

@@ -1,11 +1,14 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { appRouter } from "./routers";
+import { initializeModel } from "./ml";
 import type { TrpcContext } from "./_core/context";
 
 describe("prediction.predict", () => {
   let caller: ReturnType<typeof appRouter.createCaller>;
 
-  beforeAll(() => {
+  beforeAll(async () => {
+    // Initialize the ML model before running tests
+    await initializeModel();
     // Create a public context for testing
     const ctx: TrpcContext = {
       user: null,
